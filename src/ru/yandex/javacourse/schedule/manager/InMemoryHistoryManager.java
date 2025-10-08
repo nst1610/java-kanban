@@ -1,8 +1,9 @@
 package ru.yandex.javacourse.schedule.manager;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import ru.yandex.javacourse.schedule.tasks.Task;
 
 /**
@@ -11,13 +12,21 @@ import ru.yandex.javacourse.schedule.tasks.Task;
  * @author Vladimir Ivanov (ivanov.vladimir.l@gmail.com)
  */
 public class InMemoryHistoryManager implements HistoryManager {
-	private final LinkedList<Task> history = new LinkedList<>();
+	private Node first;
 
-	public static final int MAX_SIZE = 10;
+	private Node last;
+
+	private final Map<Integer, Node> history = new HashMap<>();
 
 	@Override
 	public List<Task> getHistory() {
-		return new ArrayList<>(history);
+		List<Task> historyList = new ArrayList<>();
+		Node current = first;
+		while (current != null) {
+			historyList.add(current.item);
+			current = current.next;
+		}
+		return historyList;
 	}
 
 	@Override
@@ -25,10 +34,54 @@ public class InMemoryHistoryManager implements HistoryManager {
 		if (task == null) {
 			return;
 		}
-		history.add(task);
-		if (history.size() > MAX_SIZE) {
-			history.removeFirst();
+		if (history.containsKey(task.getId())) {
+			remove(task.getId());
 		}
+		Node node = linkLast(task);
+		history.put(task.getId(), node);
+	}
 
+	@Override
+	public void remove(int id) {
+		Node node = history.remove(id);
+		if (node != null) {
+			removeNode(node);
+		}
+	}
+
+	private Node linkLast(Task task) {
+		Node newNode = new Node(last, task, null);
+		if (last == null) {
+			first = newNode;
+        } else {
+			last.next = newNode;
+        }
+        last = newNode;
+		return newNode;
+    }
+
+	private void removeNode(Node node) {
+		if (node.prev == null) {
+			first = node.next;
+		} else {
+			node.prev.next = node.next;
+		}
+		if (node.next == null) {
+			last = node.prev;
+		} else {
+			node.next.prev = node.prev;
+		}
+	}
+
+	private static class Node {
+		Task item;
+		Node next;
+		Node prev;
+
+		Node(Node prev, Task item, Node next) {
+			this.item = item;
+			this.next = next;
+			 this.prev = prev;
+		}
 	}
 }
