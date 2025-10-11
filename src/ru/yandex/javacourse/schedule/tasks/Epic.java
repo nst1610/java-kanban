@@ -8,7 +8,7 @@ import java.util.List;
 public class Epic extends Task {
 	protected ArrayList<Integer> subtaskIds = new ArrayList<>();
 
-	public Epic(int id, String name, String description) {
+	public Epic(Integer id, String name, String description) {
 		super(id, name, description, NEW);
 	}
 
@@ -16,7 +16,14 @@ public class Epic extends Task {
 		super(name, description, NEW);
 	}
 
+	public Epic(Epic epic) {
+		super(epic);
+		this.subtaskIds = new ArrayList<>(epic.getSubtaskIds());
+	}
+
 	public void addSubtaskId(int id) {
+		if (subtaskIds.contains(id) || this.id == id)
+			return;
 		subtaskIds.add(id);
 	}
 

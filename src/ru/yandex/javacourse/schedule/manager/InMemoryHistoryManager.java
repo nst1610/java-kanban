@@ -34,11 +34,12 @@ public class InMemoryHistoryManager implements HistoryManager {
 		if (task == null) {
 			return;
 		}
-		if (history.containsKey(task.getId())) {
-			remove(task.getId());
+		Task taskForHistory = new Task(task);
+		if (history.containsKey(taskForHistory.getId())) {
+			remove(taskForHistory.getId());
 		}
-		Node node = linkLast(task);
-		history.put(task.getId(), node);
+		Node node = linkLast(taskForHistory);
+		history.put(taskForHistory.getId(), node);
 	}
 
 	@Override

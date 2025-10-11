@@ -7,14 +7,14 @@ import org.junit.jupiter.api.Test;
 public class EpicTest {
 
     @Test
-    public void testEqualityById() {
+    public void testCompareById() {
         Epic e0 = new Epic(1, "Test 1", "Testing task 1");
         Epic e1 = new Epic(1, "Test 2", "Testing task 2");
         assertEquals(e0, e1, "task and subentities should be compared by id");
     }
 
     @Test
-    public void testSubtaskUniqueIds() {
+    public void testAddUniqueSubtasksIds() {
         Epic epic = new Epic(0, "Epic 1", "Testing epic 1");
         epic.addSubtaskId(1);
         epic.addSubtaskId(2);
