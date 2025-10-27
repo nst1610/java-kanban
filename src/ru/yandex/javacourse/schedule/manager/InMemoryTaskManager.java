@@ -21,23 +21,23 @@ public class InMemoryTaskManager implements TaskManager {
 	private final HistoryManager historyManager = Managers.getDefaultHistory();
 
 	@Override
-	public ArrayList<Task> getTasks() {
+	public List<Task> getTasks() {
 		return new ArrayList<>(tasks.values());
 	}
 
 	@Override
-	public ArrayList<Subtask> getSubtasks() {
+	public List<Subtask> getSubtasks() {
 		return new ArrayList<>(subtasks.values());
 	}
 
 	@Override
-	public ArrayList<Epic> getEpics() {
+	public List<Epic> getEpics() {
 		return new ArrayList<>(epics.values());
 	}
 
 	@Override
-	public ArrayList<Subtask> getEpicSubtasks(int epicId) {
-		ArrayList<Subtask> tasks = new ArrayList<>();
+	public List<Subtask> getEpicSubtasks(int epicId) {
+		List<Subtask> tasks = new ArrayList<>();
 		Epic epic = epics.get(epicId);
 		if (epic == null) {
 			return null;
@@ -257,7 +257,7 @@ public class InMemoryTaskManager implements TaskManager {
 	}
 
 	private int generateId() {
-		generatorId += 1;
+		generatorId ++;
 		return generatorId;
 	}
 }
