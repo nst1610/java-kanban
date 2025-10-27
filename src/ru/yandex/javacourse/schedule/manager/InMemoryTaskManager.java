@@ -20,25 +20,24 @@ public class InMemoryTaskManager implements TaskManager {
 	private int generatorId = 0;
 	private final HistoryManager historyManager = Managers.getDefaultHistory();
 
-
 	@Override
-	public ArrayList<Task> getTasks() {
-		return new ArrayList<>(this.tasks.values());
+	public List<Task> getTasks() {
+		return new ArrayList<>(tasks.values());
 	}
 
 	@Override
-	public ArrayList<Subtask> getSubtasks() {
+	public List<Subtask> getSubtasks() {
 		return new ArrayList<>(subtasks.values());
 	}
 
 	@Override
-	public ArrayList<Epic> getEpics() {
+	public List<Epic> getEpics() {
 		return new ArrayList<>(epics.values());
 	}
 
 	@Override
-	public ArrayList<Subtask> getEpicSubtasks(int epicId) {
-		ArrayList<Subtask> tasks = new ArrayList<>();
+	public List<Subtask> getEpicSubtasks(int epicId) {
+		List<Subtask> tasks = new ArrayList<>();
 		Epic epic = epics.get(epicId);
 		if (epic == null) {
 			return null;
@@ -52,6 +51,9 @@ public class InMemoryTaskManager implements TaskManager {
 	@Override
 	public Task getTask(int id) {
 		final Task task = tasks.get(id);
+		if (task == null) {
+			return null;
+		}
 		historyManager.addTask(task);
 		return task;
 	}
@@ -59,6 +61,9 @@ public class InMemoryTaskManager implements TaskManager {
 	@Override
 	public Subtask getSubtask(int id) {
 		final Subtask subtask = subtasks.get(id);
+		if (subtask == null) {
+			return null;
+		}
 		historyManager.addTask(subtask);
 		return subtask;
 	}
@@ -66,25 +71,33 @@ public class InMemoryTaskManager implements TaskManager {
 	@Override
 	public Epic getEpic(int id) {
 		final Epic epic = epics.get(id);
+		if (epic == null) {
+			return null;
+		}
 		historyManager.addTask(epic);
 		return epic;
 	}
 
 	@Override
 	public int addNewTask(Task task) {
-		final int id = ++generatorId;
-		task.setId(id);
-		tasks.put(id, task);
-		return id;
+		if (task.getId() != null && tasks.containsKey(task.getId())) {
+			throw new IllegalArgumentException("Task id " + task.getId() + " already exists.");
+		} else {
+			setCorrectId(task);
+		}
+		tasks.put(task.getId(), task);
+		return task.getId();
 	}
 
 	@Override
 	public int addNewEpic(Epic epic) {
-		final int id = ++generatorId;
-		epic.setId(id);
-		epics.put(id, epic);
-		return id;
-
+		if (epic.getId() != null && epics.containsKey(epic.getId())) {
+			throw new IllegalArgumentException("Epic id " + epic.getId() + " already exists.");
+		} else {
+			setCorrectId(epic);
+		}
+		epics.put(epic.getId(), epic);
+		return epic.getId();
 	}
 
 	@Override
@@ -94,73 +107,87 @@ public class InMemoryTaskManager implements TaskManager {
 		if (epic == null) {
 			return null;
 		}
-		final int id = ++generatorId;
-		subtask.setId(id);
-		subtasks.put(id, subtask);
+		if (subtask.getId() != null && subtasks.containsKey(subtask.getId())) {
+			throw new IllegalArgumentException("Subtask id " + epic.getId() + " already exists.");
+		} else {
+			setCorrectId(subtask);
+		}
+		subtasks.put(subtask.getId(), subtask);
 		epic.addSubtaskId(subtask.getId());
 		updateEpicStatus(epicId);
-		return id;
+		return subtask.getId();
 	}
 
 	@Override
 	public void updateTask(Task task) {
-		final int id = task.getId();
-		final Task savedTask = tasks.get(id);
-		if (savedTask == null) {
+		if (task == null) {
 			return;
 		}
-		tasks.put(id, task);
+		if (tasks.containsKey(task.getId())) {
+			tasks.put(task.getId(), task);
+		}
 	}
 
 	@Override
 	public void updateEpic(Epic epic) {
-		final Epic savedEpic = epics.get(epic.getId());
-		savedEpic.setName(epic.getName());
-		savedEpic.setDescription(epic.getDescription());
+		if (epic == null) {
+			return;
+		}
+		if (epics.containsKey(epic.getId())) {
+			epics.get(epic.getId()).setName(epic.getName());
+			epics.get(epic.getId()).setDescription(epic.getDescription());
+		}
 	}
 
 	@Override
 	public void updateSubtask(Subtask subtask) {
-		final int id = subtask.getId();
-		final int epicId = subtask.getEpicId();
-		final Subtask savedSubtask = subtasks.get(id);
-		if (savedSubtask == null) {
+		if (subtask == null) {
 			return;
 		}
-		final Epic epic = epics.get(epicId);
-		if (epic == null) {
-			return;
+		if (subtasks.containsKey(subtask.getId())) {
+			final int epicId = subtask.getEpicId();
+			if (!epics.containsKey(epicId)) {
+				return;
+			}
+			subtasks.put(subtask.getId(), subtask);
+			updateEpicStatus(epicId);
 		}
-		subtasks.put(id, subtask);
-		updateEpicStatus(epicId);
 	}
 
 	@Override
 	public void deleteTask(int id) {
 		tasks.remove(id);
+		historyManager.remove(id);
 	}
 
 	@Override
 	public void deleteEpic(int id) {
 		final Epic epic = epics.remove(id);
-		for (Integer subtaskId : epic.getSubtaskIds()) {
-			subtasks.remove(subtaskId);
+		if (epic != null) {
+			for (Integer subtaskId : epic.getSubtaskIds()) {
+				subtasks.remove(subtaskId);
+				historyManager.remove(subtaskId);
+			}
+			historyManager.remove(id);
 		}
 	}
 
 	@Override
 	public void deleteSubtask(int id) {
 		Subtask subtask = subtasks.remove(id);
-		if (subtask == null) {
-			return;
+		if (subtask != null) {
+			historyManager.remove(id);
+			Epic epic = epics.get(subtask.getEpicId());
+			epic.removeSubtask(id);
+			updateEpicStatus(epic.getId());
 		}
-		Epic epic = epics.get(subtask.getEpicId());
-		epic.removeSubtask(id);
-		updateEpicStatus(epic.getId());
 	}
 
 	@Override
 	public void deleteTasks() {
+		for (Task task : tasks.values()) {
+			historyManager.remove(task.getId());
+		}
 		tasks.clear();
 	}
 
@@ -170,12 +197,21 @@ public class InMemoryTaskManager implements TaskManager {
 			epic.cleanSubtaskIds();
 			updateEpicStatus(epic.getId());
 		}
+		for (Subtask subtask : subtasks.values()) {
+			historyManager.remove(subtask.getId());
+		}
 		subtasks.clear();
 	}
 
 	@Override
 	public void deleteEpics() {
+		for (Epic epic : epics.values()) {
+			historyManager.remove(epic.getId());
+		}
 		epics.clear();
+		for (Subtask subtask : subtasks.values()) {
+			historyManager.remove(subtask.getId());
+		}
 		subtasks.clear();
 	}
 
@@ -207,5 +243,21 @@ public class InMemoryTaskManager implements TaskManager {
 			return;
 		}
 		epic.setStatus(status);
+	}
+
+	private void setCorrectId(Task task) {
+		if (task.getId() == null) {
+			task.setId(generateId());
+		} else if (task.getId() <= generatorId) {
+			throw new IllegalArgumentException("Id cannot be less or equals than the generator value. The generator value is " +
+				generatorId);
+		} else if (task.getId() > generatorId) {
+			generatorId = task.getId();
+		}
+	}
+
+	private int generateId() {
+		generatorId++;
+		return generatorId;
 	}
 }
