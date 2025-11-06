@@ -1,5 +1,7 @@
 package ru.yandex.javacourse.schedule.manager.impl;
 
+import static ru.yandex.javacourse.schedule.tasks.TaskStatus.NEW;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -11,6 +13,8 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import ru.yandex.javacourse.schedule.exceptions.ManagerSaveException;
+import ru.yandex.javacourse.schedule.manager.Managers;
+import ru.yandex.javacourse.schedule.manager.TaskManager;
 import ru.yandex.javacourse.schedule.tasks.Epic;
 import ru.yandex.javacourse.schedule.tasks.Subtask;
 import ru.yandex.javacourse.schedule.tasks.Task;
@@ -146,8 +150,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             }
         } catch (IOException e) {
             throw new ManagerSaveException("Failed to load from file.");
-        }
-        finally {
+        } finally {
             manager.generatorId = maxTaskId;
         }
         return manager;
@@ -175,5 +178,65 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             }
             default -> throw new IllegalArgumentException();
         }
+    }
+
+    public static void main(String[] args) {
+        File tempFile;
+        try {
+            tempFile = File.createTempFile("main", ".csv");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        TaskManager manager = Managers.getFileMBackedTaskManager(tempFile.toPath());
+
+        Task task1 = new Task("Task1", "Task1 description", NEW);
+        Task task2 = new Task("Task2", "Task2 description", NEW);
+        manager.addNewTask(task1);
+        manager.addNewTask(task2);
+
+        Epic epic1 = new Epic("Epic1", "Epic1 description");
+        int epic1Id = manager.addNewEpic(epic1);
+
+        Subtask subtask1 = new Subtask("Subtask1-1", "Subtask1 description", NEW, epic1Id);
+        Subtask subtask2 = new Subtask("Subtask1-2", "Subtask1 description", NEW, epic1Id);
+        manager.addNewSubtask(subtask1);
+        manager.addNewSubtask(subtask2);
+
+        TaskManager loadedManager = FileBackedTaskManager.loadFromFile(tempFile);
+
+        System.out.printf("Count tasks in first manager: %d. Count tasks in new manager: %d.\n",
+            manager.getTasks().size(), loadedManager.getTasks().size());
+        System.out.printf("Count subtasks in first manager: %d. Count subtasks in new manager: %d.\n",
+            manager.getSubtasks().size(), loadedManager.getSubtasks().size());
+        System.out.printf("Count epics in first manager: %d. Count epics in new manager: %d.\n",
+            manager.getEpics().size(), loadedManager.getEpics().size());
+        System.out.println();
+        System.out.println("First manager tasks: ");
+        for (Task task : manager.getTasks()) {
+            System.out.println(task);
+        }
+        System.out.println("New manager tasks: ");
+        for (Task task : loadedManager.getTasks()) {
+            System.out.println(task);
+        }
+        System.out.println();
+        System.out.println("First manager epics: ");
+        for (Epic epic : manager.getEpics()) {
+            System.out.println(epic);
+        }
+        System.out.println("New manager epics: ");
+        for (Epic epic : loadedManager.getEpics()) {
+            System.out.println(epic);
+        }
+        System.out.println();
+        System.out.println("First manager subtasks: ");
+        for (Subtask subtask : manager.getSubtasks()) {
+            System.out.println(subtask);
+        }
+        System.out.println("New manager subtasks: ");
+        for (Subtask subtask : loadedManager.getSubtasks()) {
+            System.out.println(subtask);
+        }
+
     }
 }
