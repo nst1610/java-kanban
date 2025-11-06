@@ -134,12 +134,8 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 String line = br.readLine();
                 Task currentTask = fromString(line);
                 switch (currentTask.getType()) {
-                    case TaskType.TASK -> {
-                        manager.tasks.put(currentTask.getId(), currentTask);
-                    }
-                    case TaskType.EPIC -> {
-                        manager.epics.put(currentTask.getId(), (Epic) currentTask);
-                    }
+                    case TaskType.TASK -> manager.tasks.put(currentTask.getId(), currentTask);
+                    case TaskType.EPIC -> manager.epics.put(currentTask.getId(), (Epic) currentTask);
                     case TaskType.SUB_TASK -> {
                         manager.subtasks.put(currentTask.getId(), (Subtask) currentTask);
                         Integer epicId = ((Subtask) currentTask).getEpicId();
@@ -149,20 +145,22 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 maxTaskId = Math.max(maxTaskId, currentTask.getId());
             }
         } catch (IOException e) {
-            manager.generatorId = maxTaskId;
             throw new ManagerSaveException("Failed to load from file.");
+        }
+        finally {
+            manager.generatorId = maxTaskId;
         }
         return manager;
     }
 
     private static Task fromString(String line) {
-        String[] fields = line.split(",");
+        String[] fields = line.split(",", -1);
         Integer id = Integer.valueOf(fields[0]);
         TaskType type = TaskType.valueOf(fields[1]);
         String name = fields[2];
         TaskStatus status = TaskStatus.valueOf(fields[3]);
         String description = fields[4];
-        Integer epicId = Integer.valueOf(fields[5]);
+        Integer epicId = fields[5].isBlank() ? null : Integer.valueOf(fields[5]);
         switch (type) {
             case TaskType.TASK -> {
                 return new Task(id, name, description, status);

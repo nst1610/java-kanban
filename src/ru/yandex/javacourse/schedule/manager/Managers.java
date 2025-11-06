@@ -1,5 +1,7 @@
 package ru.yandex.javacourse.schedule.manager;
 
+import java.nio.file.Path;
+import ru.yandex.javacourse.schedule.manager.impl.FileBackedTaskManager;
 import ru.yandex.javacourse.schedule.manager.impl.InMemoryHistoryManager;
 import ru.yandex.javacourse.schedule.manager.impl.InMemoryTaskManager;
 
@@ -15,5 +17,9 @@ public class Managers {
 
 	public static HistoryManager getDefaultHistory() {
 		return new InMemoryHistoryManager();
+	}
+
+	public static FileBackedTaskManager getFileMBackedTaskManager(Path filePath) {
+		return new FileBackedTaskManager(filePath);
 	}
 }
