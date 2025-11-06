@@ -26,6 +26,11 @@ public class Subtask extends Task {
 	}
 
 	@Override
+	public TaskType getType() {
+		return TaskType.SUB_TASK;
+	}
+
+	@Override
 	public String toString() {
 		return "Subtask{" +
 				"id=" + id +
@@ -40,5 +45,10 @@ public class Subtask extends Task {
 		if (Objects.equals(this.id, epicId)) {
 			throw new IllegalArgumentException("Subtask cannot be attached to itself");
 		}
+	}
+
+	@Override
+	public String toCsvString() {
+		return String.format("%d,%s,%s,%s,%s,%d", id, TaskType.SUB_TASK, name,status, description, epicId);
 	}
 }

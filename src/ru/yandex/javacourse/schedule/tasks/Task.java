@@ -60,6 +60,10 @@ public class Task {
 		this.description = description;
 	}
 
+	public TaskType getType() {
+		return TaskType.TASK;
+	}
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(id);
@@ -81,5 +85,9 @@ public class Task {
 				", status='" + status + '\'' +
 				", description='" + description + '\'' +
 				'}';
+	}
+
+	public String toCsvString() {
+		return String.format("%d,%s,%s,%s,%s,", id, TaskType.TASK, name,status, description);
 	}
 }

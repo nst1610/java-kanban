@@ -1,5 +1,8 @@
 package ru.yandex.javacourse.schedule.manager;
 
+import ru.yandex.javacourse.schedule.manager.impl.InMemoryHistoryManager;
+import ru.yandex.javacourse.schedule.manager.impl.InMemoryTaskManager;
+
 /**
  * Default managers.
  *
