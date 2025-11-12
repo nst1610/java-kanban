@@ -1,5 +1,11 @@
 package ru.yandex.javacourse.schedule.manager.impl;
 
+import static ru.yandex.javacourse.schedule.tasks.Fields.DESCRIPTION;
+import static ru.yandex.javacourse.schedule.tasks.Fields.EPIC;
+import static ru.yandex.javacourse.schedule.tasks.Fields.ID;
+import static ru.yandex.javacourse.schedule.tasks.Fields.NAME;
+import static ru.yandex.javacourse.schedule.tasks.Fields.STATUS;
+import static ru.yandex.javacourse.schedule.tasks.Fields.TYPE;
 import static ru.yandex.javacourse.schedule.tasks.TaskStatus.NEW;
 
 import java.io.BufferedReader;
@@ -11,11 +17,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import ru.yandex.javacourse.schedule.exceptions.ManagerSaveException;
 import ru.yandex.javacourse.schedule.manager.Managers;
 import ru.yandex.javacourse.schedule.manager.TaskManager;
 import ru.yandex.javacourse.schedule.tasks.Epic;
+import ru.yandex.javacourse.schedule.tasks.Fields;
 import ru.yandex.javacourse.schedule.tasks.Subtask;
 import ru.yandex.javacourse.schedule.tasks.Task;
 import ru.yandex.javacourse.schedule.tasks.TaskStatus;
@@ -23,7 +32,7 @@ import ru.yandex.javacourse.schedule.tasks.TaskType;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final Path filePath;
-    private static final String NAMES = "id,type,name,status,description,epic";
+    private static final String NAMES = Arrays.stream(Fields.values()).map(Fields::getName).collect(Collectors.joining(","));
 
     public FileBackedTaskManager(Path filePath) {
         this.filePath = filePath;
@@ -145,6 +154,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                         Integer epicId = ((Subtask) currentTask).getEpicId();
                         manager.epics.get(epicId).getSubtaskIds().add(currentTask.getId());
                     }
+                    default -> throw new IllegalStateException("Unexpected value: " + currentTask.getType());
                 }
                 maxTaskId = Math.max(maxTaskId, currentTask.getId());
             }
@@ -158,12 +168,12 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
 
     private static Task fromString(String line) {
         String[] fields = line.split(",", -1);
-        Integer id = Integer.valueOf(fields[0]);
-        TaskType type = TaskType.valueOf(fields[1]);
-        String name = fields[2];
-        TaskStatus status = TaskStatus.valueOf(fields[3]);
-        String description = fields[4];
-        Integer epicId = fields[5].isBlank() ? null : Integer.valueOf(fields[5]);
+        Integer id = Integer.valueOf(fields[ID.getId()]);
+        TaskType type = TaskType.valueOf(fields[TYPE.getId()]);
+        String name = fields[NAME.getId()];
+        TaskStatus status = TaskStatus.valueOf(fields[STATUS.getId()]);
+        String description = fields[DESCRIPTION.getId()];
+        Integer epicId = fields[EPIC.getId()].isBlank() ? null : Integer.valueOf(fields[EPIC.getId()]);
         switch (type) {
             case TaskType.TASK -> {
                 return new Task(id, name, description, status);
