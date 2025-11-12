@@ -18,7 +18,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import ru.yandex.javacourse.schedule.exceptions.ManagerSaveException;
 import ru.yandex.javacourse.schedule.manager.Managers;
@@ -32,10 +34,12 @@ import ru.yandex.javacourse.schedule.tasks.TaskType;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final Path filePath;
+    private final Path historyPath;
     private static final String NAMES = Arrays.stream(Fields.values()).map(Fields::getName).collect(Collectors.joining(","));
 
-    public FileBackedTaskManager(Path filePath) {
+    public FileBackedTaskManager(Path filePath, Path historyPath) {
         this.filePath = filePath;
+        this.historyPath = historyPath;
         try {
             if (!Files.exists(filePath)) {
                 Files.createFile(filePath);
@@ -43,6 +47,27 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Override
+    public Task getTask(int id) {
+        final Task task = super.getTask(id);
+        saveHistory();
+        return task;
+    }
+
+    @Override
+    public Subtask getSubtask(int id) {
+        final Subtask subtask = super.getSubtask(id);
+        saveHistory();
+        return subtask;
+    }
+
+    @Override
+    public Epic getEpic(int id) {
+        final Epic epic = super.getEpic(id);
+        saveHistory();
+        return epic;
     }
 
     @Override
@@ -88,36 +113,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     public void deleteTask(int id) {
         super.deleteTask(id);
         save();
+        saveHistory();
     }
 
     @Override
     public void deleteEpic(int id) {
         super.deleteEpic(id);
         save();
+        saveHistory();
     }
 
     @Override
     public void deleteSubtask(int id) {
         super.deleteSubtask(id);
         save();
+        saveHistory();
     }
 
     @Override
     public void deleteTasks() {
         super.deleteTasks();
         save();
+        saveHistory();
     }
 
     @Override
     public void deleteSubtasks() {
         super.deleteSubtasks();
         save();
+        saveHistory();
     }
 
     @Override
     public void deleteEpics() {
         super.deleteEpics();
         save();
+        saveHistory();
     }
 
     private void save() {
@@ -138,8 +169,17 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         }
     }
 
-    public static FileBackedTaskManager loadFromFile(File file) {
-        FileBackedTaskManager manager = new FileBackedTaskManager(file.toPath());
+    private void saveHistory() {
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(historyPath.toString()))) {
+            bw.write(historyToString());
+        } catch (IOException e) {
+            throw new ManagerSaveException("Failed to save history to file.");
+        }
+    }
+
+    public static FileBackedTaskManager loadFromFile(File file, File historyFile) {
+        FileBackedTaskManager manager = new FileBackedTaskManager(file.toPath(), historyFile.toPath());
+        Map<Integer, Task> allTasks = new HashMap<>();
         int maxTaskId = 0;
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             String names = br.readLine();
@@ -157,13 +197,32 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                     default -> throw new IllegalStateException("Unexpected value: " + currentTask.getType());
                 }
                 maxTaskId = Math.max(maxTaskId, currentTask.getId());
+                allTasks.put(currentTask.getId(), currentTask);
             }
         } catch (IOException e) {
             throw new ManagerSaveException("Failed to load from file.");
         } finally {
             manager.generatorId = maxTaskId;
         }
+        for (Integer id : loadHistoryFromFile(historyFile)) {
+            manager.historyManager.addTask(allTasks.get(id));
+        }
         return manager;
+    }
+
+    private static List<Integer> loadHistoryFromFile(File historyFile) {
+        List<Integer> taskIds = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(historyFile))) {
+            String line = br.readLine();
+            if (line != null && !line.isBlank()) {
+                for (String id : line.split(",")) {
+                    taskIds.add(Integer.valueOf(id));
+                }
+            }
+        } catch (IOException e) {
+            throw new ManagerSaveException("Failed to load history from file.");
+        }
+        return taskIds;
     }
 
     private static Task fromString(String line) {
@@ -190,14 +249,20 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         }
     }
 
+    private String historyToString() {
+        return super.getHistory().stream()
+            .map(task -> String.valueOf(task.getId())).collect(Collectors.joining(","));
+    }
+
     public static void main(String[] args) {
-        File tempFile;
+        File tempFile, historyFile;
         try {
-            tempFile = File.createTempFile("main", ".csv");
+            tempFile = File.createTempFile("task", ".csv");
+            historyFile = File.createTempFile("history", ".csv");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        TaskManager manager = Managers.getFileMBackedTaskManager(tempFile.toPath());
+        TaskManager manager = Managers.getFileBackedTaskManager(tempFile.toPath(), historyFile.toPath());
 
         Task task1 = new Task("Task1", "Task1 description", NEW);
         Task task2 = new Task("Task2", "Task2 description", NEW);
@@ -212,7 +277,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         manager.addNewSubtask(subtask1);
         manager.addNewSubtask(subtask2);
 
-        TaskManager loadedManager = FileBackedTaskManager.loadFromFile(tempFile);
+        TaskManager loadedManager = FileBackedTaskManager.loadFromFile(tempFile, historyFile);
 
         System.out.printf("Count tasks in first manager: %d. Count tasks in new manager: %d.\n",
             manager.getTasks().size(), loadedManager.getTasks().size());
