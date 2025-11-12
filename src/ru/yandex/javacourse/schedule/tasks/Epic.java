@@ -40,6 +40,11 @@ public class Epic extends Task {
 	}
 
 	@Override
+	public TaskType getType() {
+		return TaskType.EPIC;
+	}
+
+	@Override
 	public String toString() {
 		return "Epic{" +
 				"id=" + id +
@@ -48,5 +53,10 @@ public class Epic extends Task {
 				", description='" + description + '\'' +
 				", subtaskIds=" + subtaskIds +
 				'}';
+	}
+
+	@Override
+	public String toCsvString() {
+		return String.format("%d,%s,%s,%s,%s,", id, TaskType.EPIC, name,status, description);
 	}
 }

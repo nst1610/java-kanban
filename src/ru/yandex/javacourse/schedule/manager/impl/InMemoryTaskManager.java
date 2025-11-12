@@ -1,4 +1,4 @@
-package ru.yandex.javacourse.schedule.manager;
+package ru.yandex.javacourse.schedule.manager.impl;
 
 import static ru.yandex.javacourse.schedule.tasks.TaskStatus.IN_PROGRESS;
 import static ru.yandex.javacourse.schedule.tasks.TaskStatus.NEW;
@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import ru.yandex.javacourse.schedule.manager.HistoryManager;
+import ru.yandex.javacourse.schedule.manager.Managers;
+import ru.yandex.javacourse.schedule.manager.TaskManager;
 import ru.yandex.javacourse.schedule.tasks.Epic;
 import ru.yandex.javacourse.schedule.tasks.Subtask;
 import ru.yandex.javacourse.schedule.tasks.Task;
@@ -14,11 +17,11 @@ import ru.yandex.javacourse.schedule.tasks.TaskStatus;
 
 public class InMemoryTaskManager implements TaskManager {
 
-	private final Map<Integer, Task> tasks = new HashMap<>();
-	private final Map<Integer, Epic> epics = new HashMap<>();
-	private final Map<Integer, Subtask> subtasks = new HashMap<>();
-	private int generatorId = 0;
-	private final HistoryManager historyManager = Managers.getDefaultHistory();
+	protected final Map<Integer, Task> tasks = new HashMap<>();
+	protected final Map<Integer, Epic> epics = new HashMap<>();
+	protected final Map<Integer, Subtask> subtasks = new HashMap<>();
+	protected int generatorId = 0;
+	protected final HistoryManager historyManager = Managers.getDefaultHistory();
 
 	@Override
 	public List<Task> getTasks() {
