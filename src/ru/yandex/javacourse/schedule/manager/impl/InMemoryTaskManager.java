@@ -47,15 +47,11 @@ public class InMemoryTaskManager implements TaskManager {
 
 	@Override
 	public List<Subtask> getEpicSubtasks(int epicId) {
-		List<Subtask> tasks = new ArrayList<>();
 		Epic epic = epics.get(epicId);
 		if (epic == null) {
 			return null;
 		}
-		for (int id : epic.getSubtaskIds()) {
-			tasks.add(subtasks.get(id));
-		}
-		return tasks;
+		return epic.getSubtaskIds().stream().map(subtasks::get).toList();
 	}
 
 	@Override
@@ -194,12 +190,11 @@ public class InMemoryTaskManager implements TaskManager {
 	public void deleteEpic(int id) {
 		final Epic epic = epics.remove(id);
 		if (epic != null) {
-			for (Integer subtaskId : epic.getSubtaskIds()) {
-				Subtask subtask = subtasks.get(subtaskId);
-				subtasks.remove(subtaskId);
-				historyManager.remove(subtaskId);
-				prioritizedTasks.remove(subtask);
-			}
+			epic.getSubtaskIds().stream().map(subtasks::remove)
+				.forEach(subtask -> {
+					historyManager.remove(subtask.getId());
+					prioritizedTasks.remove(subtask);
+				});
 			historyManager.remove(id);
 		}
 	}
@@ -219,37 +214,35 @@ public class InMemoryTaskManager implements TaskManager {
 
 	@Override
 	public void deleteTasks() {
-		for (Task task : tasks.values()) {
+		tasks.values().forEach(task -> {
 			historyManager.remove(task.getId());
 			prioritizedTasks.remove(task);
-		}
+		});
 		tasks.clear();
 	}
 
 	@Override
 	public void deleteSubtasks() {
-		for (Epic epic : epics.values()) {
+		epics.values().forEach(epic -> {
 			epic.cleanSubtaskIds();
 			updateEpicStatus(epic.getId());
 			updateEpicDuration(epic.getId());
-		}
-		for (Subtask subtask : subtasks.values()) {
+		});
+		subtasks.values().forEach(subtask -> {
 			historyManager.remove(subtask.getId());
 			prioritizedTasks.remove(subtask);
-		}
+		});
 		subtasks.clear();
 	}
 
 	@Override
 	public void deleteEpics() {
-		for (Epic epic : epics.values()) {
-			historyManager.remove(epic.getId());
-		}
+		epics.values().forEach(epic -> historyManager.remove(epic.getId()));
 		epics.clear();
-		for (Subtask subtask : subtasks.values()) {
-			historyManager.remove(subtask.getId());
-			prioritizedTasks.remove(subtask);
-		}
+		subtasks.values().forEach(sub -> {
+			historyManager.remove(sub.getId());
+			prioritizedTasks.remove(sub);
+		});
 		subtasks.clear();
 	}
 
