@@ -1,5 +1,7 @@
 package ru.yandex.javacourse.schedule.tasks;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class Task {
@@ -7,6 +9,9 @@ public class Task {
 	protected String name;
 	protected TaskStatus status;
 	protected String description;
+	protected Duration duration;
+	protected LocalDateTime startTime;
+
 
 	public Task(Integer id, String name, String description, TaskStatus status) {
 		this.id = id;
@@ -21,11 +26,30 @@ public class Task {
 		this.status = status;
 	}
 
+	public Task(Integer id, String name, String description, TaskStatus status, Duration duration, LocalDateTime startTime) {
+		this.id = id;
+		this.name = name;
+		this.description = description;
+		this.status = status;
+		this.duration = duration;
+		this.startTime = startTime;
+	}
+
+	public Task(String name, String description, TaskStatus status, Duration duration, LocalDateTime startTime) {
+		this.name = name;
+		this.description = description;
+		this.status = status;
+		this.duration = duration;
+		this.startTime = startTime;
+	}
+
 	public Task(Task task) {
 		this.id = task.getId();
 		this.name = task.getName();
 		this.status = task.getStatus();
 		this.description = task.getDescription();
+		this.duration = task.getDuration();
+		this.startTime = task.getStartTime();
 	}
 
 	public Integer getId() {
@@ -60,6 +84,29 @@ public class Task {
 		this.description = description;
 	}
 
+	public Duration getDuration() {
+		return duration;
+	}
+
+	public void setDuration(Duration duration) {
+		this.duration = duration;
+	}
+
+	public LocalDateTime getStartTime() {
+		return startTime;
+	}
+
+	public void setStartTime(LocalDateTime startTime) {
+		this.startTime = startTime;
+	}
+
+	public LocalDateTime getEndTime() {
+		if (startTime != null && duration != null) {
+			return startTime.plus(duration);
+		}
+		return null;
+	}
+
 	public TaskType getType() {
 		return TaskType.TASK;
 	}
@@ -88,6 +135,8 @@ public class Task {
 	}
 
 	public String toCsvString() {
-		return String.format("%d,%s,%s,%s,%s,", id, TaskType.TASK, name,status, description);
+		return String.format("%d,%s,%s,%s,%s,%s,%s,%s,", id, TaskType.TASK, name,status, description,
+			startTime == null ? "" : startTime, duration == null ? 0 : duration.toMinutes(),
+			getEndTime() == null ? "" : getEndTime());
 	}
 }

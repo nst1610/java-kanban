@@ -1,5 +1,7 @@
 package ru.yandex.javacourse.schedule.tasks;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Objects;
 
 public class Subtask extends Task {
@@ -13,6 +15,17 @@ public class Subtask extends Task {
 
 	public Subtask(String name, String description, TaskStatus status, Integer epicId) {
 		super(name, description, status);
+		this.epicId = epicId;
+	}
+
+	public Subtask(Integer id, String name, String description, TaskStatus status, Integer epicId, Duration duration, LocalDateTime startTime) {
+		super(id, name, description, status, duration, startTime);
+		checkEpicId(epicId);
+		this.epicId = epicId;
+	}
+
+	public Subtask(String name, String description, TaskStatus status, Integer epicId, Duration duration, LocalDateTime startTime) {
+		super(name, description, status, duration, startTime);
 		this.epicId = epicId;
 	}
 
@@ -49,6 +62,8 @@ public class Subtask extends Task {
 
 	@Override
 	public String toCsvString() {
-		return String.format("%d,%s,%s,%s,%s,%d", id, TaskType.SUB_TASK, name,status, description, epicId);
+		return String.format("%d,%s,%s,%s,%s,%s,%s,%s,%d", id, TaskType.SUB_TASK, name, status, description,
+			startTime == null ? "" : startTime, duration == null ? 0 : duration.toMinutes(),
+			getEndTime() == null ? "" : getEndTime(), epicId);
 	}
 }
