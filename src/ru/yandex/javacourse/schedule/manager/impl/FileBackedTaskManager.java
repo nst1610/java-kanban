@@ -1,9 +1,12 @@
 package ru.yandex.javacourse.schedule.manager.impl;
 
 import static ru.yandex.javacourse.schedule.tasks.Fields.DESCRIPTION;
+import static ru.yandex.javacourse.schedule.tasks.Fields.DURATION;
+import static ru.yandex.javacourse.schedule.tasks.Fields.END_TIME;
 import static ru.yandex.javacourse.schedule.tasks.Fields.EPIC;
 import static ru.yandex.javacourse.schedule.tasks.Fields.ID;
 import static ru.yandex.javacourse.schedule.tasks.Fields.NAME;
+import static ru.yandex.javacourse.schedule.tasks.Fields.START_TIME;
 import static ru.yandex.javacourse.schedule.tasks.Fields.STATUS;
 import static ru.yandex.javacourse.schedule.tasks.Fields.TYPE;
 import static ru.yandex.javacourse.schedule.tasks.TaskStatus.NEW;
@@ -16,11 +19,14 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import ru.yandex.javacourse.schedule.exceptions.ManagerSaveException;
 import ru.yandex.javacourse.schedule.manager.Managers;
@@ -86,7 +92,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
 
     @Override
     public Integer addNewSubtask(Subtask subtask) {
-        int id = super.addNewSubtask(subtask);
+        Integer id = super.addNewSubtask(subtask);
         save();
         return id;
     }
@@ -187,12 +193,20 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 String line = br.readLine();
                 Task currentTask = fromString(line);
                 switch (currentTask.getType()) {
-                    case TaskType.TASK -> manager.tasks.put(currentTask.getId(), currentTask);
+                    case TaskType.TASK -> {
+                        manager.tasks.put(currentTask.getId(), currentTask);
+                        if (Objects.nonNull(currentTask.getStartTime())) {
+                            manager.prioritizedTasks.add(currentTask);
+                        }
+                    }
                     case TaskType.EPIC -> manager.epics.put(currentTask.getId(), (Epic) currentTask);
                     case TaskType.SUB_TASK -> {
                         manager.subtasks.put(currentTask.getId(), (Subtask) currentTask);
                         Integer epicId = ((Subtask) currentTask).getEpicId();
                         manager.epics.get(epicId).getSubtaskIds().add(currentTask.getId());
+                        if (Objects.nonNull(currentTask.getStartTime())) {
+                            manager.prioritizedTasks.add(currentTask);
+                        }
                     }
                     default -> throw new IllegalStateException("Unexpected value: " + currentTask.getType());
                 }
@@ -232,18 +246,24 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         String name = fields[NAME.getId()];
         TaskStatus status = TaskStatus.valueOf(fields[STATUS.getId()]);
         String description = fields[DESCRIPTION.getId()];
+        LocalDateTime startTime = fields[START_TIME.getId()].isBlank() ? null : LocalDateTime.parse(fields[START_TIME.getId()]);
+        Duration duration = Duration.ofMinutes(Long.parseLong(fields[DURATION.getId()]));
+        LocalDateTime endTime = fields[END_TIME.getId()].isBlank() ? null : LocalDateTime.parse(fields[END_TIME.getId()]);
         Integer epicId = fields[EPIC.getId()].isBlank() ? null : Integer.valueOf(fields[EPIC.getId()]);
         switch (type) {
             case TaskType.TASK -> {
-                return new Task(id, name, description, status);
+                return new Task(id, name, description, status, duration, startTime);
             }
             case TaskType.EPIC -> {
                 Epic epic = new Epic(id, name, description);
                 epic.setStatus(status);
+                epic.setStartTime(startTime);
+                epic.setDuration(duration);
+                epic.setEndTime(endTime);
                 return epic;
             }
             case TaskType.SUB_TASK -> {
-                return new Subtask(id, name, description, status, epicId);
+                return new Subtask(id, name, description, status, epicId, duration, startTime);
             }
             default -> throw new IllegalArgumentException();
         }

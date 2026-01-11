@@ -6,7 +6,10 @@ public enum Fields {
     NAME(2, "name"),
     STATUS(3, "status"),
     DESCRIPTION(4, "description"),
-    EPIC(5, "epic");
+    START_TIME(5, "startTime"),
+    DURATION(6, "duration"),
+    END_TIME(7, "endTime"),
+    EPIC(8, "epic");
 
     private final Integer id;
     private final String name;

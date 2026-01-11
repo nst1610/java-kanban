@@ -50,4 +50,6 @@ public interface TaskManager {
 	void deleteEpics();
 
 	List<Task> getHistory();
+
+	List<Task> getPrioritizedTasks();
 }
