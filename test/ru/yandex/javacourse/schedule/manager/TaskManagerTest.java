@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.yandex.javacourse.schedule.exceptions.IntersectionException;
+import ru.yandex.javacourse.schedule.exceptions.NotFoundException;
 import ru.yandex.javacourse.schedule.tasks.Epic;
 import ru.yandex.javacourse.schedule.tasks.Subtask;
 import ru.yandex.javacourse.schedule.tasks.Task;
@@ -134,7 +135,7 @@ abstract class TaskManagerTest<T extends TaskManager> {
         taskManager.addNewSubtask(subtask1);
         taskManager.deleteEpic(epicId);
         assertTrue(taskManager.getSubtasks().isEmpty());
-        assertNull(taskManager.getEpic(epicId));
+        assertThrows(NotFoundException.class, () -> taskManager.getEpic(epicId));
     }
 
     @Test
