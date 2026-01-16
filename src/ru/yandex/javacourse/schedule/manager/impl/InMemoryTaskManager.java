@@ -145,8 +145,7 @@ public class InMemoryTaskManager implements TaskManager {
 			}
 			tasks.put(task.getId(), task);
 			addToPrioritizedSet(task);
-		}
-		else {
+		} else {
 			throw new NotFoundException("Task with id " + task.getId() + " not found");
 		}
 	}
@@ -159,8 +158,7 @@ public class InMemoryTaskManager implements TaskManager {
 		if (epics.containsKey(epic.getId())) {
 			epics.get(epic.getId()).setName(epic.getName());
 			epics.get(epic.getId()).setDescription(epic.getDescription());
-		}
-		else {
+		} else {
 			throw new NotFoundException("Epic with id " + epic.getId() + " not found");
 		}
 	}
@@ -182,8 +180,7 @@ public class InMemoryTaskManager implements TaskManager {
 			updateEpicStatus(epicId);
 			updateEpicDuration(epicId);
 			addToPrioritizedSet(subtask);
-		}
-		else {
+		} else {
 			throw new NotFoundException("Subtask with id " + subtask.getId() + " not found");
 		}
 	}
